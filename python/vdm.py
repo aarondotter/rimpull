@@ -30,7 +30,7 @@ Cr = 2.50 #rolling coefficient
 c2 = 0.1  #rolling resistance coefficient
 c3 = 10   #rolling resistance coefficient
 
-grade=0.1 # vertical / horizontal
+grade=0. # vertical / horizontal
 
 
 def acceleration(V):
@@ -55,26 +55,62 @@ def acceleration(V):
 
 
 close("all")
-#test it:
-t =0. # s
-dt=1. # s
-v=0.  # km/h
-velocity=[v]
-time=[t]
-#simple Euler's method ODE integration for one hour.
-while t < 3600:
-    a=acceleration(v)  # input v in km/h, output a in m/s^2
-    if a < 1e-4: break # stop when a gets too small.
-    v+=a*dt/3.6        # update velocity, convert from m/s to km/h
-    t+=dt
-    velocity.append(v)
-    time.append(t)
+fs=20
 
-#plot velocity vs. time
-figure(1,figsize=(8,8))
-plot(time,velocity)
-xticks(fontsize=20)
-yticks(fontsize=20)
-xlabel("time (s)",fontsize=20)
-ylabel("velocity (km/h)",fontsize=20)
+if False:
+    #test it:
+    t =0. # s
+    dt=1. # s
+    v=0.  # km/h
+    velocity=[v]
+    time=[t]
+    #simple Euler's method ODE integration for one hour.
+    while t < 3600:
+        a=acceleration(v)  # input v in km/h, output a in m/s^2
+        if a < 1e-4: break # stop when a gets too small.
+        v+=a*dt/3.6        # update velocity, convert from m/s to km/h
+        t+=dt
+        velocity.append(v)
+        time.append(t)
+
+    #plot velocity vs. time
+    figure(1,figsize=(8,8))
+    plot(time,velocity)
+    xticks(fontsize=fs)
+    yticks(fontsize=fs)
+    xlabel("time (s)",fontsize=fs)
+    ylabel("velocity (km/h)",fontsize=fs)
+    show()
+
+masses=linspace(75000,165000,10)
+grades=linspace(0,0.30,7)
+
+results=[]
+for M in masses:
+    res=[]
+    for grade in grades:
+        t=0
+        dt=1
+        v=0
+        while t < 3600:
+            a=acceleration(v)
+            if a < 1e-4: break
+            v+=a*dt/3.6
+            t+=dt
+        #print M, grade, v
+        res.append(v)
+    results.append(res)
+results=array(results)
+
+figure(2,figsize=(8,8))
+for i,grade in enumerate(grades):
+    plot(masses*1e-3,results[:,i],label="{0:4.2f}".format(grade))
+xlim(70,170)
+ylim(0,70)
+xticks(fontsize=fs)
+yticks(fontsize=fs)
+xlabel("gross vehicle weight x 1000 (kg)",fontsize=fs)
+ylabel("maximum velocity (km/h)",fontsize=fs)
+legend(fancybox=True,title="Grade",fontsize=fs-2,
+       borderpad=0.2,handletextpad=0.2,labelspacing=0.2)
 show()
