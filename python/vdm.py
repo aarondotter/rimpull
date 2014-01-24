@@ -94,7 +94,7 @@ for M in masses:
         v=0
         while t < 3600:
             a=acceleration(v)
-            if a < 1e-4: break
+            if a < 1e-5: break
             v+=a*dt/3.6
             t+=dt
         #print M, grade, v
