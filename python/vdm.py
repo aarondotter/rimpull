@@ -2,9 +2,34 @@ from pylab import *
 
 '''Vehicle Dynamics Model by Rakha et al.'''
 
+#define physical constants:
+g=9.8      #Earth gravitational acceleration, m/s^2
+
+#data for diesel fuel
+mass_density=0.754 # kg/L
+energy_density=35.86e6 # J/L
+
+class Truck(object):
+''' a truck '''
+    def __init__(self):
+        self.power=power  #engine power (W)
+        self.trans_eff=tran_eff #transmission efficiency, dimensionless, [0-1]
+        self.eng_eff=eng_eff
+        self.vehicle_mass=vehicle_mass #unloaded mass of the vehicle (kg)
+        self.load_mass=load_mass #mass of load (kg)
+        self.fta=fta #fraction on tractive axle, dimensionless, [0-1]
+        self.drag=drag #drag coefficient, dimensionless
+        self.area=area #vehicle front surface area, m^2
+        self.position=position # [x,y,z]
+        self.fuel_tank_max=1135 # L (optional 1324 L)
+        self.fuel_tank=0
+
+    def fill_tank(self):
+        self.fuel_tank = self.fuel_tank_max
+
 #tractive effort section
 #definitions
-g=9.8      #Earth gravitational acceleration, m/s^2
+
 P=683      #engine power, kW
 #V=20       #speed, km/h
 tiny=1e-3  #softening factor to avoid divide by zero
