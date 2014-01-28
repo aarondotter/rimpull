@@ -6,26 +6,25 @@ from pylab import *
 g=9.8      #Earth gravitational acceleration, m/s^2
 
 #data for diesel fuel
-mass_density=0.754 # kg/L
-energy_density=35.86e6 # J/L
+diesel_mass_density=0.754 # kg/L
+diesel_energy_density=35.86e6 # J/L
+diesel_engine_efficiency=0.5 # dimensionless
 
-class Truck(object):
-''' a truck '''
-    def __init__(self):
-        self.power=power  #engine power (W)
-        self.trans_eff=tran_eff #transmission efficiency, dimensionless, [0-1]
-        self.eng_eff=eng_eff
-        self.vehicle_mass=vehicle_mass #unloaded mass of the vehicle (kg)
-        self.load_mass=load_mass #mass of load (kg)
-        self.fta=fta #fraction on tractive axle, dimensionless, [0-1]
-        self.drag=drag #drag coefficient, dimensionless
-        self.area=area #vehicle front surface area, m^2
-        self.position=position # [x,y,z]
-        self.fuel_tank_max=1135 # L (optional 1324 L)
-        self.fuel_tank=0
+#class Truck(object):
+#''' a truck '''
+#    def __init__(self):
+#        self.power=power  #engine power (W)
+#        self.trans_eff=tran_eff #transmission efficiency, dimensionless, [0-1]
+#        self.eng_eff=eng_eff
+#        self.vehicle_mass=vehicle_mass #unloaded mass of the vehicle (kg)
+#        self.load_mass=load_mass #mass of load (kg)
+#        self.fta=fta #fraction on tractive axle, dimensionless, [0-1]
+#        self.drag=drag #drag coefficient, dimensionless
+#        self.area=area #vehicle front surface area, m^2
+#        self.position=position # [x,y,z]
+#        self.fuel_tank_max=1135 # L (optional 1324 L)
+#        self.fuel_tank=0
 
-    def fill_tank(self):
-        self.fuel_tank = self.fuel_tank_max
 
 #tractive effort section
 #definitions
@@ -38,6 +37,7 @@ M=165000   #vehicle mass (kg)
 fta=0.64   #fraction on tractive axle, [0-1] dimensionless, 0.64 for dump truck
 Mta= M*fta #mass on tractive axle, kg
 mu=0.3      #coeffiecient of friction, dimensionless
+
 
 #resistance forces section, N
 #definitions
@@ -75,28 +75,41 @@ def acceleration(V):
     #total resistance force
     R = Ra + Rr + Rg
 
-    #acceleration, m/s^2, is net force divided by mass
-    return (F-R)/M
+    return (F-R)/M #acceleration, m/s^2
+
 
 
 close("all")
 fs=20
-
-if False:
+if True:
     #test it:
-    t =0. # s
-    dt=1. # s
-    v=0.  # km/h
+    t =0. # time (s)
+    dt=1. # time step (s)
+    v=0.  # velocity (km/h)
+    f=1135 # fuel (L)
+    fuel=[f]
     velocity=[v]
     time=[t]
     #simple Euler's method ODE integration for one hour.
     while t < 3600:
-        a=acceleration(v)  # input v in km/h, output a in m/s^2
-        if a < 1e-4: break # stop when a gets too small.
-        v+=a*dt/3.6        # update velocity, convert from m/s to km/h
+        a=acceleration(v)   # input v in km/h, output a in m/s^2
+        #if a < 1e-4: break # stop when a gets too small.
+        v+=a*dt/3.6         # update velocity, convert from m/s to km/h
         t+=dt
+        
+        #fuel burned as energy balance 
+        output=P*1e3*dt #W*s=J
+        input_per_L=diesel_engine_efficiency*diesel_energy_density
+        fuel_burned = output/input_per_L # W / (W/L) = L
+        f-=fuel_burned
+        
         velocity.append(v)
         time.append(t)
+        fuel.append(f)
+        
+    time=array(time)
+    velocity=array(velocity)
+    fuel=array(fuel)
 
     #plot velocity vs. time
     figure(1,figsize=(8,8))
@@ -105,37 +118,45 @@ if False:
     yticks(fontsize=fs)
     xlabel("time (s)",fontsize=fs)
     ylabel("velocity (km/h)",fontsize=fs)
+    
+    figure(2,figsize=(8,8))
+    plot(time,fuel/fuel[0])
+    xticks(fontsize=fs)
+    yticks(fontsize=fs)
+    xlabel("time (s)",fontsize=fs)
+    ylabel("fuel (L)",fontsize=fs)
     show()
 
-masses=linspace(75000,165000,10)
-grades=linspace(0,0.30,7)
-
-results=[]
-for M in masses:
-    res=[]
-    for grade in grades:
-        t=0
-        dt=1
-        v=0
-        while t < 3600:
-            a=acceleration(v)
-            if a < 1e-5: break
-            v+=a*dt/3.6
-            t+=dt
-        #print M, grade, v
-        res.append(v)
-    results.append(res)
-results=array(results)
-
-figure(2,figsize=(8,8))
-for i,grade in enumerate(grades):
-    plot(masses*1e-3,results[:,i],label="{0:4.2f}".format(grade))
-xlim(70,170)
-ylim(0,70)
-xticks(fontsize=fs)
-yticks(fontsize=fs)
-xlabel("gross vehicle weight x 1000 (kg)",fontsize=fs)
-ylabel("maximum velocity (km/h)",fontsize=fs)
-legend(fancybox=True,title="Grade",fontsize=fs-2,
-       borderpad=0.2,handletextpad=0.2,labelspacing=0.2)
-show()
+if False:
+    masses=linspace(75000,165000,10)
+    grades=linspace(0,0.30,7)
+    
+    results=[]
+    for M in masses:
+        res=[]
+        for grade in grades:
+            t=0
+            dt=1
+            v=0
+            while t < 3600:
+                a=acceleration(v)
+                if a < 1e-5: break
+                v+=a*dt/3.6
+                t+=dt
+            #print M, grade, v
+            res.append(v)
+        results.append(res)
+    results=array(results)
+    
+    figure(2,figsize=(8,8))
+    for i,grade in enumerate(grades):
+        plot(masses*1e-3,results[:,i],label="{0:4.2f}".format(grade))
+    xlim(70,170)
+    ylim(0,70)
+    xticks(fontsize=fs)
+    yticks(fontsize=fs)
+    xlabel("gross vehicle weight x 1000 (kg)",fontsize=fs)
+    ylabel("maximum velocity (km/h)",fontsize=fs)
+    legend(fancybox=True,title="Grade",fontsize=fs-2,
+           borderpad=0.2,handletextpad=0.2,labelspacing=0.2)
+    show()
