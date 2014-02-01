@@ -6,6 +6,10 @@ from pylab import *
 #define physical constants:
 g=9.8      #Earth gravitational acceleration, m/s^2
 
+#conversion factors
+ms2kmh=3.6
+kmh2ms=1/ms2kmh
+
 #data for diesel fuel
 diesel_mass_density=0.754 # kg/L
 diesel_energy_density=35.86e6 # J/L
@@ -54,7 +58,7 @@ def acceleration(v,x):
     #input: x, [0,1], throttle
 
     #tractive effort, N
-    Ft=3.6*eta*power(x)/(v+tiny)
+    Ft=ms2kmh*eta*power(x)/(v+tiny)
     Fmax=g*Mta*mu
     F=min(Ft,Fmax)
 
@@ -76,23 +80,27 @@ def drive_truck(tmax=3600,v_target=-1):
 
     use_throttle = v_target > 0
 
-    t =0.  # time (s)
-    dt=1.  # time step (s)
-    v=0.   # velocity (km/h)
-    f=1135 # fuel (L)
-    x=1.0  # throttle [0,1] dimensionless
-    v_target = 30. # target velocity (km/h)
+    print(" v_target = {0:4.1f}".format(v_target))
+
+    t =0.   # time (s)
+    dt=1.   # time step (s)
+    v=32.    # velocity (km/h)
+    dist=0. # distance (km)
+    f=1135. # fuel (L)
+    x=1.0   # throttle [0,1] dimensionless
+    #initialize storage arrays (which are actually lists)
     fuel=[f]
     velocity=[v]
+    distance=[dist] #km
     time=[t]
     throttle=[x]
-    q=1e-1 #sets width of interval over which throttle is adjusted
+    q=0.5 #sets width of interval over which throttle is adjusted
 
-    #simple Euler's method ODE integration for one hour.
+    #simple Euler's method ODE integration
     while t <= tmax:
         a=acceleration(v,x) # input v in km/h, output a in m/s^2
-        #if a < 1e-4: break # stop when a gets too small.
-        v+=a*dt/3.6         # update velocity, convert from m/s to km/h
+        dist+=1e-3*dt*(kmh2ms*v + 0.5*a*dt) # update distance (km)
+        v+=a*dt*ms2kmh      # update velocity, convert from m/s to km/h
         t+=dt
 
         #fuel burned as energy balance 
@@ -102,54 +110,69 @@ def drive_truck(tmax=3600,v_target=-1):
         f-=fuel_burned
         
         velocity.append(v)
+        distance.append(dist)
         time.append(t)
         fuel.append(f)
         throttle.append(x)
 
         # adjust throttle by comparing v with v_target
-        # throttle control model is Fermi-Dirac with
+        # throttle control model is Fermi-Dirac fxn with
         # parameter q to control the width of the interval
         if use_throttle: x=1./(exp((v-v_target)/q)+1.)
+        #if use_throttle:
+        #    if v > v_target:
+        #        x*=0.8
+        #    elif v < v_target:
+        #        x*=1.2
+        #    x=minmax(x,0,1)
 
-    return array(time),array(velocity),array(fuel),array(throttle)
+    print(" v_final = {0:4.1f}".format(velocity[-1]))
+    return array(time),array(velocity),array(distance),array(fuel),array(throttle)
 
 close("all")
 fs=20
 
+
+
 #do one full throttle
 tmax=1200 #(s)
-t1,v1,f1,thr1=drive_truck(tmax)
+t1,v1,d1,f1,thr1=drive_truck(tmax)
 
 #do one with a target velocity
-v_target=30 #kph
-t2,v2,f2,thr2=drive_truck(tmax,v_target)
+v_target=10. #kph
+t2,v2,d2,f2,thr2=drive_truck(tmax,v_target)
 
 xmin=0
 xmax=tmax
-#plot velocity vs. time
+
+#plot quantities vs. time
 fig1=figure(1,figsize=(10,10))
-fig1.subplots_adjust(top=0.96,right=0.96)
+fig1.subplots_adjust(bottom=0.08,top=0.96,right=0.96)
 subplot(311)
 plot(t1,v1,color="Blue",label="full")
 plot(t2,v2,color="Red",label="adjust")
 xticks(fontsize=fs)
 yticks(fontsize=fs)
-#xlabel("time (s)",fontsize=fs)
 ylabel("velocity (km/h)",fontsize=fs)
-legend(loc='lower right',fontsize=fs)
+legend(loc='lower right',fancybox=True,fontsize=fs)
 xlim(xmin,xmax)
 
-#figure(2,figsize=(8,8))
 subplot(312)
-plot(t1,f1,color="Blue")
-plot(t2,f2,color="Red")
+plot(t1,d1,color="Blue")
+plot(t2,d2,color="Red")
 xticks(fontsize=fs)
 yticks(fontsize=fs)
-#xlabel("time (s)",fontsize=fs)
-ylabel("fuel (L)",fontsize=fs)
+ylabel("distance (km)",fontsize=fs)
 xlim(xmin,xmax)
 
-#figure(3,figsize=(8,8))
+#subplot(413)
+#plot(t1,f1,color="Blue")
+#plot(t2,f2,color="Red")
+#xticks(fontsize=fs)
+#yticks(fontsize=fs)
+#ylabel("fuel (L)",fontsize=fs)
+#xlim(xmin,xmax)
+
 subplot(313)
 plot(t1,thr1,color="Blue")
 plot(t2,thr2,color="Red")
@@ -158,39 +181,4 @@ yticks(fontsize=fs)
 xlabel("time (s)",fontsize=fs)
 ylabel("throttle",fontsize=fs)
 xlim(xmin,xmax)
-ylim(0.8,1.01)
 show()
-
-if False:
-    masses=linspace(75000,165000,10)
-    grades=linspace(0,0.30,7)
-    
-    results=[]
-    for M in masses:
-        res=[]
-        for grade in grades:
-            t=0
-            dt=1
-            v=0
-            while t < 3600:
-                a=acceleration(v)
-                if a < 1e-5: break
-                v+=a*dt/3.6
-                t+=dt
-            #print M, grade, v
-            res.append(v)
-        results.append(res)
-    results=array(results)
-    
-    figure(2,figsize=(8,8))
-    for i,grade in enumerate(grades):
-        plot(masses*1e-3,results[:,i],label="{0:4.2f}".format(grade))
-    xlim(70,170)
-    ylim(0,70)
-    xticks(fontsize=fs)
-    yticks(fontsize=fs)
-    xlabel("gross vehicle weight x 1000 (kg)",fontsize=fs)
-    ylabel("maximum velocity (km/h)",fontsize=fs)
-    legend(fancybox=True,title="Grade",fontsize=fs-2,
-           borderpad=0.2,handletextpad=0.2,labelspacing=0.2)
-    show()
