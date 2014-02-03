@@ -69,10 +69,7 @@ def acceleration(v,x):
     #resistance forces
     #Ra= c1*Cd*Ch*Area*v*v    #air drag
     #Rr= g*Cr*(c2*v+c3)*M/1e3 #rolling resistance (friction)
-    Rg= g*M*(grade+friction)  #grade and friction resistance
-
-    #total resistance force
-    R = Rg
+    R = g*M*(grade+friction)  # grade and friction dimensionless in [0,1]
 
     return (F-R)/M #acceleration, m/s^2
 
@@ -98,7 +95,7 @@ def drive_truck(tmax=3600,v_target=-1):
     distance=[dist] #km
     time=[t]
     throttle=[x]
-    q=0.1 #sets width of interval over which throttle is adjusted
+    q=0.2 #sets width of interval over which throttle is adjusted
 
     #simple Euler's method ODE integration
     while t <= tmax:
@@ -137,7 +134,6 @@ close("all")
 fs=20
 
 
-
 #do one full throttle
 tmax=1200 #(s)
 t1,v1,d1,f1,thr1=drive_truck(tmax)
@@ -147,7 +143,7 @@ v_target=10. #kph
 t2,v2,d2,f2,thr2=drive_truck(tmax,v_target)
 
 xmin=0
-xmax=50 #tmax
+xmax=tmax
 
 #plot quantities vs. time
 fig1=figure(1,figsize=(10,10))
