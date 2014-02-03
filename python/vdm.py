@@ -22,7 +22,9 @@ Pmax=6.83e5#engine power spec., W
 #V=20      #speed, km/h
 tiny=1e-3  #softening factor to avoid divide by zero
 eta=0.8    #transmission efficiency, dimensionless, [0.89-0.94] - 0.1 for accessories
-M=165000   #vehicle mass (kg)
+Mt=75000   #vehicle mass - empty (kg)
+Ml=25000   #load mass (kg)
+M=Mt+Ml    #total mass (kg)
 fta=0.64   #fraction on tractive axle, [0-1] dimensionless, 0.64 for dump truck
 Mta= M*fta #mass on tractive axle, kg
 mu=0.3      #coeffiecient of friction, dimensionless
@@ -40,11 +42,13 @@ H = 100        # altitude, m
 Ch= 1-8.5e-5*H # altitdue coefficient, dimensionless
 Area = 31.5    # area, m^2
 
-Cr = 2.50 #rolling coefficient
-c2 = 0.1  #rolling resistance coefficient
-c3 = 10   #rolling resistance coefficient
+# for the fancy version of rolling resistance
+#Cr = 2.50 #rolling coefficient
+#c2 = 0.1  #rolling resistance coefficient
+#c3 = 10   #rolling resistance coefficient
 
-grade=0. # vertical / horizontal
+friction=0.05  # the way they do it in mining
+grade=0.05      # slope
 
 def minmax(x,a,b): #utility
     return max(a,min(x,b))
@@ -63,12 +67,12 @@ def acceleration(v,x):
     F=min(Ft,Fmax)
 
     #resistance forces
-    Ra= c1*Cd*Ch*Area*v*v    #air drag
-    Rr= g*Cr*(c2*v+c3)*M/1e3 #rolling resistance (friction)
-    Rg= g*M*grade            #grade resistance
+    #Ra= c1*Cd*Ch*Area*v*v    #air drag
+    #Rr= g*Cr*(c2*v+c3)*M/1e3 #rolling resistance (friction)
+    Rg= g*M*(grade+friction)  #grade and friction resistance
 
     #total resistance force
-    R = Ra + Rr + Rg
+    R = Rg
 
     return (F-R)/M #acceleration, m/s^2
 
@@ -83,8 +87,8 @@ def drive_truck(tmax=3600,v_target=-1):
     print(" v_target = {0:4.1f}".format(v_target))
 
     t =0.   # time (s)
-    dt=1.   # time step (s)
-    v=32.    # velocity (km/h)
+    dt=.1   # time step (s)
+    v=32.   # velocity (km/h)
     dist=0. # distance (km)
     f=1135. # fuel (L)
     x=1.0   # throttle [0,1] dimensionless
@@ -94,7 +98,7 @@ def drive_truck(tmax=3600,v_target=-1):
     distance=[dist] #km
     time=[t]
     throttle=[x]
-    q=0.5 #sets width of interval over which throttle is adjusted
+    q=0.1 #sets width of interval over which throttle is adjusted
 
     #simple Euler's method ODE integration
     while t <= tmax:
@@ -143,7 +147,7 @@ v_target=10. #kph
 t2,v2,d2,f2,thr2=drive_truck(tmax,v_target)
 
 xmin=0
-xmax=tmax
+xmax=50 #tmax
 
 #plot quantities vs. time
 fig1=figure(1,figsize=(10,10))
