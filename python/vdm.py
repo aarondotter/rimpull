@@ -46,8 +46,9 @@ Area = 31.5    # area, m^2
 #Cr = 2.50 #rolling coefficient
 #c2 = 0.1  #rolling resistance coefficient
 #c3 = 10   #rolling resistance coefficient
+#Rr= g*Cr*(c2*v+c3)*M/1e3 #rolling resistance (friction)
 
-friction=0.05  # the way they do it in mining
+friction=0.02   # the way they do it in mining
 grade=0.05      # slope
 
 def minmax(x,a,b): #utility
@@ -67,9 +68,11 @@ def acceleration(v,x):
     F=min(Ft,Fmax)
 
     #resistance forces
-    #Ra= c1*Cd*Ch*Area*v*v    #air drag
-    #Rr= g*Cr*(c2*v+c3)*M/1e3 #rolling resistance (friction)
-    R = g*M*(grade+friction)  # grade and friction dimensionless in [0,1]
+    Ra= c1*Cd*Ch*Area*v*v    #air drag
+    Rg = g*M*(grade+friction)
+
+    #total resistance
+    R= Ra+Rg
 
     return (F-R)/M #acceleration, m/s^2
 
