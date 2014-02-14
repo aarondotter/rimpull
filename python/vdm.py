@@ -21,23 +21,24 @@ diesel_engine_efficiency=0.5 # dimensionless
 Pmax=6.83e5#engine power spec., W
 #V=20      #speed, km/h
 tiny=1e-3  #softening factor to avoid divide by zero
-eta=0.8    #transmission efficiency, dimensionless, [0.89-0.94] - 0.1 for accessories
-Mt=75000   #vehicle mass - empty (kg)
-Ml=25000   #load mass (kg)
+eta=0.85   #transmission efficiency, dimensionless, [0.89-0.94] - 0.1 for accessories
+Mt=67000   #vehicle mass - empty (kg)
+#Ml=0
+Ml=98000   #load mass (kg)  --- max at 98000
 M=Mt+Ml    #total mass (kg)
 fta=0.64   #fraction on tractive axle, [0-1] dimensionless, 0.64 for dump truck
 Mta= M*fta #mass on tractive axle, kg
-mu=0.3      #coeffiecient of friction, dimensionless
-
+mu=0.60    #coeffiecient of friction, dimensionless
+           #value from hpwizard.com: offroad tyre on dry gravel road
 
 #resistance forces section, N
 #definitions
 c1= 0.047      # factor to due air density
-    # 1/2*density / 3.6^2 (to convert from km/h to m/s)
+    # 0.5*density / 3.6^2 (to convert from km/h to m/s)
     # comes from Ra=(1/2)*(density of air)*Cd*A*V^2
     # density of air is a function of temperature, see 
     # http://en.wikipedia.org/wiki/Density_of_air
-Cd= 0.7        # drag coefficient, dimensionless
+Cd= 0.9        # drag coefficient, dimensionless
 H = 100        # altitude, m
 Ch= 1-8.5e-5*H # altitdue coefficient, dimensionless
 Area = 31.5    # area, m^2
@@ -48,8 +49,9 @@ Area = 31.5    # area, m^2
 #c3 = 10   #rolling resistance coefficient
 #Rr= g*Cr*(c2*v+c3)*M/1e3 #rolling resistance (friction)
 
-friction=0.02   # the way they do it in mining
+friction=0.0   # the way they do it in mining
 grade=0.05      # slope
+
 
 def minmax(x,a,b): #utility
     return max(a,min(x,b))
@@ -88,7 +90,7 @@ def drive_truck(tmax=3600,v_target=-1):
 
     t =0.   # time (s)
     dt=.1   # time step (s)
-    v=32.   # velocity (km/h)
+    v=0.    # velocity (km/h)
     dist=0. # distance (km)
     f=1135. # fuel (L)
     x=1.0   # throttle [0,1] dimensionless
@@ -137,51 +139,66 @@ close("all")
 fs=20
 
 
-#do one full throttle
-tmax=1200 #(s)
+
+tmax=200 #(s)
+
+grade=0.05
 t1,v1,d1,f1,thr1=drive_truck(tmax)
 
+
+grade=0.10
+t2,v2,d2,f2,thr2=drive_truck(tmax)
+
+
+grade=0.15
+t3,v3,d3,f3,thr3=drive_truck(tmax)
+
+
+
+
 #do one with a target velocity
-v_target=10. #kph
-t2,v2,d2,f2,thr2=drive_truck(tmax,v_target)
+#v_target=10. #kph
+#t2,v2,d2,f2,thr2=drive_truck(tmax,v_target)
 
-xmin=0
-xmax=tmax
+if False:
+    xmin=0
+    xmax=tmax
 
-#plot quantities vs. time
-fig1=figure(1,figsize=(10,10))
-fig1.subplots_adjust(bottom=0.08,top=0.96,right=0.96)
-subplot(311)
-plot(t1,v1,color="Blue",label="full")
-plot(t2,v2,color="Red",label="adjust")
-xticks(fontsize=fs)
-yticks(fontsize=fs)
-ylabel("velocity (km/h)",fontsize=fs)
-legend(loc='lower right',fancybox=True,fontsize=fs)
-xlim(xmin,xmax)
+    #plot quantities vs. time
+    fig1=figure(1,figsize=(10,10))
+    fig1.subplots_adjust(bottom=0.08,top=0.96,right=0.96)
+    subplot(311)
+    plot(t1,v1,color="Blue",label="grade 5%")
+    plot(t2,v2,color="Red",label="grade 10%")
+    plot(t3,v3,color="Green",label="grade 15%")
+    xticks(fontsize=fs)
+    yticks(fontsize=fs)
+    ylabel("velocity (km/h)",fontsize=fs)
+    legend(loc='lower right',fancybox=True,fontsize=fs)
+    xlim(xmin,xmax)
 
-subplot(312)
-plot(t1,d1,color="Blue")
-plot(t2,d2,color="Red")
-xticks(fontsize=fs)
-yticks(fontsize=fs)
-ylabel("distance (km)",fontsize=fs)
-xlim(xmin,xmax)
+    subplot(312)
+    plot(t1,d1,color="Blue")
+    plot(t2,d2,color="Red")
+    xticks(fontsize=fs)
+    yticks(fontsize=fs)
+    ylabel("distance (km)",fontsize=fs)
+    xlim(xmin,xmax)
 
-#subplot(413)
-#plot(t1,f1,color="Blue")
-#plot(t2,f2,color="Red")
-#xticks(fontsize=fs)
-#yticks(fontsize=fs)
-#ylabel("fuel (L)",fontsize=fs)
-#xlim(xmin,xmax)
+    #subplot(413)
+    #plot(t1,f1,color="Blue")
+    #plot(t2,f2,color="Red")
+    #xticks(fontsize=fs)
+    #yticks(fontsize=fs)
+    #ylabel("fuel (L)",fontsize=fs)
+    #xlim(xmin,xmax)
 
-subplot(313)
-plot(t1,thr1,color="Blue")
-plot(t2,thr2,color="Red")
-xticks(fontsize=fs)
-yticks(fontsize=fs)
-xlabel("time (s)",fontsize=fs)
-ylabel("throttle",fontsize=fs)
-xlim(xmin,xmax)
-show()
+    subplot(313)
+    plot(t1,thr1,color="Blue")
+    plot(t2,thr2,color="Red")
+    xticks(fontsize=fs)
+    yticks(fontsize=fs)
+    xlabel("time (s)",fontsize=fs)
+    ylabel("throttle",fontsize=fs)
+    xlim(xmin,xmax)
+    show()
