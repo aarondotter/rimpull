@@ -79,13 +79,28 @@ def acceleration(v,x):
     return (F-R)/M #acceleration, m/s^2
 
 
-def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
+def drive_truck(tmax,v_start,v_yield,t1_yield, t2_yield):
     #input 
     # tmax = time to stop (s)
     # v_target = target velocity, if > 0 then adjust throttle
-
+    # v_fullspeed = max speed allowed in pit
+    # v_yield = the slower speed to avoid stopping
+    # intersection is assumed to be at 300m (yieldend)
+     
+    v_fullspeed = 30
     v_target = v_fullspeed
     use_throttle = v_target > 0
+
+    yieldend = .5
+    if v_start * t1_yield/60 > yieldend:
+        yieldstart = yieldend-.07*v_fullspeed/(v_fullspeed-v_yield)
+    elif v_start * t2_yield/60 < yieldend:
+        yieldstart = yieldend-.07*v_fullspeed/(v_fullspeed-v_yield) 
+    else:
+        lagtime = t2_yield - yieldend/v_fullspeed*60        
+        yieldstart = lagtime*v_fullspeed*(v_fullspeed-v_yield)
+        
+
    
     v = v_start
 
@@ -95,8 +110,6 @@ def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
     dt=.1   # time step (s)
     #v=0.    # velocity (km/h)
     dist=0. # distance (km)
-    yeildstart=.1
-    yeildend=.3
     f=1135. # fuel (L)
     x=1.0   # throttle [0,1] dimensionless
     #initialize storage arrays (which are actually lists)
@@ -127,9 +140,9 @@ def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
         throttle.append(x)
         
         #yeild section adjustments to target velocity
-        if dist > yeildstart: v_target = v_yeild
+        if dist > yieldstart: v_target = v_yield
             
-        if dist > yeildend: v_target = v_fullspeed
+        if dist > yieldend: v_target = v_fullspeed
 
         # adjust throttle by comparing v with v_target
         # throttle control model is Fermi-Dirac fxn with
@@ -152,16 +165,12 @@ fs=20
 
 tmax=200 #(s)
 
-grade=0.05
-t1,v1,d1,f1,thr1=drive_truck(tmax,0,30,15)
+grade=0.02
+t1,v1,d1,f1,thr1=drive_truck(tmax,30,15,5,50)
 
+t2,v2,d2,f2,thr2=drive_truck(tmax,30,15,1,50)
 
-grade=0.10
-t2,v2,d2,f2,thr2=drive_truck(tmax,0,30,15)
-
-
-grade=0.15
-t3,v3,d3,f3,thr3=drive_truck(tmax,0,30,15)
+t3,v3,d3,f3,thr3=drive_truck(tmax,30,tiny,15,50)
 
 
 
@@ -178,9 +187,9 @@ if True:
     fig1=figure(1,figsize=(10,10))
     fig1.subplots_adjust(bottom=0.08,top=0.96,right=0.96)
     subplot(311)
-    plot(t1,v1,color="Blue",label="grade 5%")
-    plot(t2,v2,color="Red",label="grade 10%")
-    plot(t3,v3,color="Green",label="grade 15%")
+    plot(t1,v1,color="Blue",label="Slow down for Turn")
+    plot(t2,v2,color="Red",label="Yield for Turn")
+    plot(t3,v3,color="Green",label="Yield Speed 0")
     xticks(fontsize=fs)
     yticks(fontsize=fs)
     ylabel("velocity (km/h)",fontsize=fs)
@@ -190,6 +199,7 @@ if True:
     subplot(312)
     plot(t1,d1,color="Blue")
     plot(t2,d2,color="Red")
+    plot(t3,d3,color="Green")
     xticks(fontsize=fs)
     yticks(fontsize=fs)
     ylabel("distance (km)",fontsize=fs)
@@ -206,6 +216,7 @@ if True:
     subplot(313)
     plot(t1,thr1,color="Blue")
     plot(t2,thr2,color="Red")
+    plot(t3,thr3,color="Green")
     xticks(fontsize=fs)
     yticks(fontsize=fs)
     xlabel("time (s)",fontsize=fs)

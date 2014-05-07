@@ -42,6 +42,7 @@ Cd= 0.9        # drag coefficient, dimensionless
 H = 100        # altitude, m
 Ch= 1-8.5e-5*H # altitdue coefficient, dimensionless
 Area = 31.5    # area, m^2
+maxVelo = 60   # max velocity of transmission
 
 # for the fancy version of rolling resistance
 #Cr = 2.50 #rolling coefficient
@@ -76,27 +77,25 @@ def acceleration(v,x):
     #total resistance
     R= Ra+Rg
 
-    return (F-R)/M #acceleration, m/s^2
+    if v >= maxVelo:
+        return 0
+    else:
+        return ((F-R)/M) #acceleration, m/s^2
 
 
-def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
+def drive_truck(dmax,v_target):
     #input 
     # tmax = time to stop (s)
     # v_target = target velocity, if > 0 then adjust throttle
 
-    v_target = v_fullspeed
     use_throttle = v_target > 0
-   
-    v = v_start
 
     print(" v_target = {0:4.1f}".format(v_target))
 
     t =0.   # time (s)
     dt=.1   # time step (s)
-    #v=0.    # velocity (km/h)
+    v=0.    # velocity (km/h)
     dist=0. # distance (km)
-    yeildstart=.1
-    yeildend=.3
     f=1135. # fuel (L)
     x=1.0   # throttle [0,1] dimensionless
     #initialize storage arrays (which are actually lists)
@@ -108,7 +107,7 @@ def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
     q=0.2 #sets width of interval over which throttle is adjusted
 
     #simple Euler's method ODE integration
-    while t <= tmax:
+    while dist <= dmax:
         a=acceleration(v,x) # input v in km/h, output a in m/s^2
         dist+=1e-3*dt*(kmh2ms*v + 0.5*a*dt) # update distance (km)
         v+=a*dt*ms2kmh      # update velocity, convert from m/s to km/h
@@ -125,11 +124,6 @@ def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
         time.append(t)
         fuel.append(f)
         throttle.append(x)
-        
-        #yeild section adjustments to target velocity
-        if dist > yeildstart: v_target = v_yeild
-            
-        if dist > yeildend: v_target = v_fullspeed
 
         # adjust throttle by comparing v with v_target
         # throttle control model is Fermi-Dirac fxn with
@@ -142,7 +136,7 @@ def drive_truck(tmax,v_start,v_fullspeed,v_yeild):
         #        x*=1.2
         #    x=minmax(x,0,1)
 
-    print(" v_final = {0:4.1f}".format(velocity[-1]))
+    print("v_final = {0:4.1f}".format(velocity[-1]))
     return array(time),array(velocity),array(distance),array(fuel),array(throttle)
 
 close("all")
@@ -152,16 +146,19 @@ fs=20
 
 tmax=200 #(s)
 
-grade=0.05
-t1,v1,d1,f1,thr1=drive_truck(tmax,0,30,15)
+grade=0.00
+t1,v1,d1,f1,thr1=drive_truck(.1,60)
+
+grade=0.02
+t2,v2,d2,f2,thr2=drive_truck(.1,60)
 
 
 grade=0.10
-t2,v2,d2,f2,thr2=drive_truck(tmax,0,30,15)
+t3,v3,d3,f3,thr3=drive_truck(.1,60)
 
 
 grade=0.15
-t3,v3,d3,f3,thr3=drive_truck(tmax,0,30,15)
+t4,v4,d4,f4,thr4=drive_truck(.1,60)
 
 
 
@@ -178,9 +175,10 @@ if True:
     fig1=figure(1,figsize=(10,10))
     fig1.subplots_adjust(bottom=0.08,top=0.96,right=0.96)
     subplot(311)
-    plot(t1,v1,color="Blue",label="grade 5%")
-    plot(t2,v2,color="Red",label="grade 10%")
-    plot(t3,v3,color="Green",label="grade 15%")
+    plot(t1,v1,color="Blue",label="grade 2%")
+    plot(t2,v2,color="Red",label="grade 5%")
+    plot(t3,v3,color="Green",label="grade 10%")
+    plot(t4,v4,color="Yellow",label="grade 15%")
     xticks(fontsize=fs)
     yticks(fontsize=fs)
     ylabel("velocity (km/h)",fontsize=fs)
@@ -190,6 +188,8 @@ if True:
     subplot(312)
     plot(t1,d1,color="Blue")
     plot(t2,d2,color="Red")
+    plot(t3,d3,color="Green")
+    plot(t4,d4,color="Yellow")
     xticks(fontsize=fs)
     yticks(fontsize=fs)
     ylabel("distance (km)",fontsize=fs)
